@@ -1,0 +1,182 @@
+﻿@page "/chat"
+@page "/chat/{ThreadId:int}"
+@inject ChatService ChatService
+@inject ModelService ModelService
+@inject AuthenticationStateProvider AuthStateProvider
+@using Auth0.AspNetCore.Authentication
+@using Westwind.AspNetCore.Markdown
+@inject NavigationManager NavigationManager
+
+<h3>@(IsNewThread ? "New Chat" : $"Thread: {ThreadTitle}")</h3>
+
+@if (!IsNewThread)
+{
+    <div>
+        <strong>History:</strong>
+        <ul>
+            @foreach (var msg in ThreadMessages)
+            {
+                <li>
+                    <b>You:</b> @((MarkupString)Markdown.ParseHtmlString(msg.Prompt).ToString())<br />
+                    <b>Bot:</b> @((MarkupString)Markdown.ParseHtmlString(msg.Response).ToString())
+                </li>
+            }
+        </ul>
+    </div>
+}
+@* <div>
+    <strong>Response:</strong>
+    <div>
+        @if (!string.IsNullOrEmpty(CurrentResponse))
+        {
+            @((MarkupString)Markdown.ParseHtmlString(CurrentResponse).ToString())
+        }
+    </div>
+</div> *@
+<div>
+    <label>Model:</label>
+    <select @bind="SelectedModel">
+        @foreach (var model in AvailableModels)
+        {
+            <option value="@model.Id">@model.Id</option>
+        }
+    </select>
+</div>
+<div>
+    <textarea @bind="UserInput" rows="4" cols="60"></textarea>
+</div>
+<div>
+    <button @onclick="SendPrompt" disabled="@IsLoading">Send</button>
+</div>
+@* <div>
+    <strong>Response:</strong>
+    <div style="white-space: pre-wrap;">
+        @foreach (var chunk in OutputChunks)
+        {
+            <span>@((MarkupString)Markdown.ParseHtmlString(chunk).ToString())</span>
+        }
+    </div>
+</div> *@
+@if (IsLoading)
+{
+    <div>Loading...</div>
+}
+
+@code {
+    [Parameter] public int? ThreadId { get; set; }
+    private string UserInput;
+    private List<ModelInfo> AvailableModels = new();
+    private string SelectedModel;
+    private string UserId;
+    private string ThreadTitle;
+    private bool IsNewThread => !ThreadId.HasValue;
+    private List<ChatHistory> ThreadMessages = new();
+    private bool IsLoading = false;
+    private ChatHistory CurrentMessage = new ChatHistory();
+
+    // Streaming output
+    private string CurrentResponse = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserIdAsync();
+        await LoadModelsAsync();
+        await LoadThreadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadThreadAsync();
+    }
+
+    private async Task LoadUserIdAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        UserId = user.FindFirst(c =>
+            c.Type == "sub" ||
+            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+        )?.Value;
+    }
+
+    private async Task LoadModelsAsync()
+    {
+        AvailableModels = await ModelService.GetAvailableModelsAsync();
+        SelectedModel = AvailableModels.FirstOrDefault()?.Id;
+    }
+
+    private async Task LoadThreadAsync()
+    {
+        if (ThreadId.HasValue && !string.IsNullOrEmpty(UserId))
+        {
+            ThreadMessages = await ChatService.GetMessagesForThreadAsync(ThreadId.Value);
+            var thread = (await ChatService.GetThreadsForUserAsync(UserId))
+                .FirstOrDefault(t => t.Id == ThreadId.Value);
+            ThreadTitle = thread?.Title ?? $"Thread {ThreadId}";
+            CurrentMessage = ThreadMessages.LastOrDefault() ?? new ChatHistory();
+        }
+        else
+        {
+            ThreadMessages = new List<ChatHistory>();
+            ThreadTitle = null;
+            CurrentMessage = new ChatHistory();
+        }
+        StateHasChanged();
+    }
+
+    private List<string> OutputChunks = new();
+
+    private async Task SendPrompt()
+    {
+        OutputChunks.Clear();
+        CurrentResponse = "";
+        IsLoading = true;
+        StateHasChanged();
+
+        int threadId = ThreadId ?? 0;
+
+        if (IsNewThread)
+        {
+            ThreadTitle = UserInput.Length > 40 ? UserInput.Substring(0, 40) + "..." : UserInput;
+            threadId = await ChatService.CreateThreadAsync(UserId, ThreadTitle);
+
+            await foreach (var chunk in ChatService.StreamResponseAsync(threadId, UserInput, SelectedModel))
+            {
+                OutputChunks.Add(chunk);
+                CurrentResponse += chunk;
+                StateHasChanged();
+            }
+
+            await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
+
+            // After saving, clear streaming state and load the latest message from history
+            ThreadMessages = await ChatService.GetMessagesForThreadAsync(threadId);
+            OutputChunks.Clear();
+            CurrentResponse = ThreadMessages.LastOrDefault()?.Response ?? "";
+            IsLoading = false;
+            UserInput = "";
+            StateHasChanged();
+
+            NavigationManager.NavigateTo($"/chat/{threadId}", forceLoad: true);
+            return;
+        }
+
+        // Existing thread
+        await foreach (var chunk in ChatService.StreamResponseAsync(threadId, UserInput, SelectedModel))
+        {
+            OutputChunks.Add(chunk);
+            CurrentResponse += chunk;
+            StateHasChanged();
+        }
+
+        await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
+
+        // After saving, clear streaming state and load the latest message from history
+        ThreadMessages = await ChatService.GetMessagesForThreadAsync(threadId);
+        OutputChunks.Clear();
+        CurrentResponse = ThreadMessages.LastOrDefault()?.Response ?? "";
+        IsLoading = false;
+        UserInput = "";
+        StateHasChanged();
+    }
+}

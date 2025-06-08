@@ -1,0 +1,32 @@
+﻿@inject NavigationManager Navigation
+@using Auth0.AspNetCore.Authentication
+
+<AuthorizeView>
+    <Authorized>
+        @if (user != null)
+        {
+            <div>
+                <div class="nav-link">
+                    @user.FindFirst(c => c.Type == "nickname" )?.Value
+                </div>
+                <button class="btn btn-link text-danger p-0 mt-2" @onclick="Logout">Logout</button>
+            </div>
+        }
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; }
+    private ClaimsPrincipal user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        user = authState.User;
+    }
+
+    private void Logout()
+    {
+        Navigation.NavigateTo("logout", true);
+    }
+}

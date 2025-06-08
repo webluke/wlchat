@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ChatService ChatService
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">wl.chat</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link" href="/chat">New Chat</a>
+        </li>
+        @if (Threads != null)
+        {
+            @foreach (var thread in Threads)
+            {
+                <li class="nav-item">
+                    <a class="nav-link" href="@($"/chat/{thread.Id}")">@thread.Title</a>
+                    <button class="btn btn-sm btn-danger ms-2" title="Delete"
+                            @onclick="() => DeleteThread(thread.Id)">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </li>
+            }
+        }
+        <li class="nav-item">
+            <AuthorizeView>
+                <Authorized>
+                    <UserInfo />
+                </Authorized>
+                <NotAuthorized>
+                    <button class="btn btn-primary" @onclick="Login">Login</button>
+                </NotAuthorized>
+            </AuthorizeView>
+        </li>
+    </ul>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    private List<ChatThread> Threads;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = user.FindFirst(c =>
+                    c.Type == "sub" ||
+                    c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+                )?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            Threads = await ChatService.GetThreadsForUserAsync(userId);
+        }
+    }
+
+    private async Task DeleteThread(int threadId)
+    {
+        await ChatService.DeleteThreadAsync(threadId);
+        Threads = Threads.Where(t => t.Id != threadId).ToList();
+
+        // If the deleted thread is currently open, redirect to new chat
+        var currentUri = Navigation.Uri;
+        if (currentUri.EndsWith($"/chat/{threadId}"))
+        {
+            Navigation.NavigateTo("/chat", forceLoad: true);
+        }
+
+        StateHasChanged();
+    }
+
+    private void Login()
+    {
+        Navigation.NavigateTo("login", true);
+    }
+}
