@@ -28,12 +28,20 @@
                     <div class="message-text">
                         @((MarkupString)MarkdownService.Parse(msg.Response))
                     </div>
-                    <div class="message-time">@msg.CreatedAt</div>
+                    <div class="message-time">@msg.Model - @msg.CreatedAt</div>
                 </div>
             </div>
         }
         @if (IsLoading)
         {
+            <div class="chat-message from-me">
+                <div class="avatar">🤔</div>
+                <div class="message-bubble">
+                    <div class="message-text">
+                            @((MarkupString)MarkdownService.Parse(UserInput))
+                    </div>
+                </div>
+            </div>
             <div class="chat-message from-them">
                 <div class="avatar">🤖</div>
                 <div class="message-bubble">
@@ -56,8 +64,14 @@
             }
         </select>
         <button class="send-btn" title="Send" @onclick="SendPrompt" disabled="@IsLoading">
-            <span class="emoji">🚀</span>
-        </button>
+                @if (IsLoading)
+                {
+                    <span class="emoji">🔥</span>
+                } else
+                {
+                    <span class="emoji">🚀</span>
+                }
+            </button>
         </div>
     </div>
 </div>
@@ -135,6 +149,7 @@
 
     private async Task SendPrompt()
     {
+        if (String.IsNullOrEmpty(UserInput)) { return; }
         OutputChunks.Clear();
         CurrentResponse = "";
         IsLoading = true;
