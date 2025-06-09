@@ -56,6 +56,9 @@ public class ChatService
             var line = await reader.ReadLineAsync();
             if (!string.IsNullOrWhiteSpace(line))
             {
+                if (line.Trim() == "[DONE]")
+                    continue;
+
                 string? toYield = null;
 
                 try
@@ -66,7 +69,6 @@ public class ChatService
                     using var doc = JsonDocument.Parse(line);
                     if (doc.RootElement.TryGetProperty("choices", out var choices))
                     {
-                        // For chat API, the content is under choices[0].delta.content (for streaming)
                         var delta = choices[0].GetProperty("delta");
                         if (delta.TryGetProperty("content", out var contentProp))
                         {

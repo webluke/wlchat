@@ -5,9 +5,11 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Web.Virtualization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @using Microsoft.JSInterop
 @using System.Security.Claims
 @using wl.chat
 @using wl.chat.Shared
 @using wl.chat.Data
-@using Westwind.AspNetCore.Markdown
+@inject IMarkdownService MarkdownService
+@using wl.chat.Services

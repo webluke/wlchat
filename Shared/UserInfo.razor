@@ -5,11 +5,10 @@
     <Authorized>
         @if (user != null)
         {
-            <div>
-                <div class="nav-link">
-                    @user.FindFirst(c => c.Type == "nickname" )?.Value
-                </div>
-                <button class="btn btn-link text-danger p-0 mt-2" @onclick="Logout">Logout</button>
+            <div class="user-info">
+                <span class="user-avatar">🤔</span>
+                <span class="user-name">@user.FindFirst(c => c.Type == "nickname")?.Value</span>
+                <button class="logout-btn" title="Logout" @onclick="Logout">Logout</button>
             </div>
         }
     </Authorized>

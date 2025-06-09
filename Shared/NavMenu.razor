@@ -3,44 +3,27 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ChatService ChatService
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">wl.chat</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
-
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <ul class="nav flex-column">
-        <li class="nav-item">
-            <a class="nav-link" href="/chat">New Chat</a>
-        </li>
-        @if (Threads != null)
+<ul class="chat-list">
+    @if (Threads != null)
+    {
+        @foreach (var thread in Threads)
         {
-            @foreach (var thread in Threads)
-            {
-                <li class="nav-item">
-                    <a class="nav-link" href="@($"/chat/{thread.Id}")">@thread.Title</a>
-                    <button class="btn btn-sm btn-danger ms-2" title="Delete"
-                            @onclick="() => DeleteThread(thread.Id)">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </li>
-            }
+            <li class="chat-list-item active">
+                <span class="chat-name"><a class="nav-link" href="@($"/chat/{thread.Id}")">@thread.Title</a></span>
+                <button class="remove-chat-btn" title="Remove chat" @onclick="() => DeleteThread(thread.Id)">🗑️</button>
+            </li>
         }
-        <li class="nav-item">
-            <AuthorizeView>
-                <Authorized>
-                    <UserInfo />
-                </Authorized>
-                <NotAuthorized>
-                    <button class="btn btn-primary" @onclick="Login">Login</button>
-                </NotAuthorized>
-            </AuthorizeView>
-        </li>
-    </ul>
+    }
+</ul>
+<div class="sidebar-user">
+    <AuthorizeView>
+        <Authorized>
+            <UserInfo />
+        </Authorized>
+        <NotAuthorized>
+            <button class="login-btn" @onclick="Login">Login</button>
+        </NotAuthorized>
+    </AuthorizeView>
 </div>
 
 @code {

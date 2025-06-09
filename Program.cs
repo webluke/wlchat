@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Data.SqlClient;
-using Westwind.AspNetCore.Markdown;
 using wl.chat.Data;
+using wl.chat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +18,7 @@ builder.Services.AddAuth0WebAppAuthentication(options => {
 builder.Services.AddAuthorizationCore();
 
 // Add services to the container.
-builder.Services.AddMarkdown();
+builder.Services.AddSingleton<IMarkdownService, MarkdigService>();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
@@ -40,7 +40,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseMarkdown();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
