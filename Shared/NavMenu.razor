@@ -3,6 +3,8 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ChatService ChatService
 
+<AuthorizeView>
+<Authorized>
 <ul class="chat-list">
     @if (Threads != null)
     {
@@ -16,16 +18,15 @@
     }
 </ul>
 <div class="sidebar-user">
-    <AuthorizeView>
-        <Authorized>
-            <UserInfo />
-        </Authorized>
-        <NotAuthorized>
-            <button class="login-btn" @onclick="Login">Login</button>
-        </NotAuthorized>
-    </AuthorizeView>
+    <UserInfo />
 </div>
-
+</Authorized>
+<NotAuthorized>
+<div class="sidebar-user">
+    <button class="login-btn" @onclick="Login">Login</button>
+</div>
+</NotAuthorized>
+</AuthorizeView>
 @code {
     private bool collapseNavMenu = true;
 

@@ -4,8 +4,10 @@
 @inject ModelService ModelService
 @inject AuthenticationStateProvider AuthStateProvider
 @using Auth0.AspNetCore.Authentication
-@inject NavigationManager NavigationManager
+@inject NavigationManager Navigation
 @inject IJSRuntime JS
+
+<PageTitle>@(IsNewThread ? "New Chat" : $"{ThreadTitle}")</PageTitle>
 
 <div class="chat-app">
     <div class="chat-title">@(IsNewThread ? "New Chat" : $"{ThreadTitle}")</div>
@@ -28,30 +30,30 @@
                     <div class="message-text">
                         @((MarkupString)MarkdownService.Parse(msg.Response))
                     </div>
-                    <div class="message-time">@msg.Model - @msg.CreatedAt</div>
+                    <div class="message-time">@msg.Model - @msg.CreatedAt UTC</div>
                 </div>
             </div>
         }
-        @if (IsLoading)
-        {
-            <div class="chat-message from-me">
-                <div class="avatar">🤔</div>
-                <div class="message-bubble">
-                    <div class="message-text">
-                            @((MarkupString)MarkdownService.Parse(UserInput))
-                    </div>
+    }
+    @if (IsLoading)
+    {
+        <div class="chat-message from-me">
+            <div class="avatar">🤔</div>
+            <div class="message-bubble">
+                <div class="message-text">
+                    @((MarkupString)MarkdownService.Parse(UserInput))
                 </div>
             </div>
-            <div class="chat-message from-them">
-                <div class="avatar">🤖</div>
-                <div class="message-bubble">
-                    <div class="message-text">
-                        @CurrentResponse
-                    </div>
-                    <div class="message-time">loading...</div>
+        </div>
+        <div class="chat-message from-them">
+            <div class="avatar">🤖</div>
+            <div class="message-bubble">
+                <div class="message-text">
+                    @CurrentResponse
                 </div>
+                <div class="message-time">loading...</div>
             </div>
-        }
+        </div>
     }
     </div>
     <div class="chat-input-area">
@@ -95,7 +97,6 @@
     private bool IsLoading = false;
     private ChatHistory CurrentMessage = new ChatHistory();
 
-    // Streaming output
     private string CurrentResponse = "";
 
     protected override async Task OnInitializedAsync()
@@ -114,10 +115,7 @@
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        UserId = user.FindFirst(c =>
-            c.Type == "sub" ||
-            c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-        )?.Value;
+        UserId = user.FindFirst(c =>c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
     }
 
     private async Task LoadModelsAsync()
@@ -133,6 +131,10 @@
             ThreadMessages = await ChatService.GetMessagesForThreadAsync(ThreadId.Value);
             var thread = (await ChatService.GetThreadsForUserAsync(UserId))
                 .FirstOrDefault(t => t.Id == ThreadId.Value);
+            if(thread == null)
+            {
+                Navigation.NavigateTo("chat", true);
+            }
             ThreadTitle = thread?.Title ?? $"Thread {ThreadId}";
             CurrentMessage = ThreadMessages.LastOrDefault() ?? new ChatHistory();
         }
@@ -176,7 +178,6 @@
 
             await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
 
-            // After saving, clear streaming state and load the latest message from history
             ThreadMessages = await ChatService.GetMessagesForThreadAsync(threadId);
             OutputChunks.Clear();
             CurrentResponse = ThreadMessages.LastOrDefault()?.Response ?? "";
@@ -184,11 +185,10 @@
             UserInput = "";
             StateHasChanged();
 
-            NavigationManager.NavigateTo($"/chat/{threadId}", forceLoad: true);
+            Navigation.NavigateTo($"/chat/{threadId}", forceLoad: true);
             return;
         }
 
-        // Existing thread
         await foreach (var chunk in ChatService.StreamResponseAsync(threadId, UserInput, SelectedModel))
         {
             OutputChunks.Add(chunk);
@@ -203,7 +203,6 @@
 
         await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
 
-        // After saving, clear streaming state and load the latest message from history
         ThreadMessages = await ChatService.GetMessagesForThreadAsync(threadId);
         OutputChunks.Clear();
         CurrentResponse = ThreadMessages.LastOrDefault()?.Response ?? "";

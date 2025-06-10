@@ -6,12 +6,20 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <span class="site-logo">💬</span>
-        <span class="site-name">WL.chat</span>
+        <span class="site-name">chat.webluke.net</span>
       </div>
-      <a class="new-chat-btn" href="/chat">
-        <span class="emoji">➕</span> New Chat
-      </a>
-        <NavMenu />
+      <AuthorizeView>
+        <Authorized>
+          <a class="new-chat-btn" href="/chat">
+            <span class="emoji">➕</span> New Chat
+          </a>
+        </Authorized>
+        <NotAuthorized>
+            <a class="login-btn" href="login">Login</a>
+            <a class="login-btn" href="signup">Sign Up</a>
+        </NotAuthorized>
+      </AuthorizeView>
+      <NavMenu />
     </aside>
     <main class="main-chat">
         @Body

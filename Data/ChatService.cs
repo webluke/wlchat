@@ -93,20 +93,6 @@ public class ChatService
         }
     }
 
-    public async Task SaveChatAsync(string userId, string prompt, string response, string model)
-    {
-        var sql = @"INSERT INTO ChatHistory (UserId, Prompt, Response, Model, CreatedAt)
-                        VALUES (@UserId, @Prompt, @Response, @Model, @CreatedAt)";
-        await _db.ExecuteAsync(sql, new
-        {
-            UserId = userId,
-            Prompt = prompt,
-            Response = response,
-            Model = model,
-            CreatedAt = DateTime.UtcNow
-        });
-    }
-
     public async Task<List<ChatThread>> GetThreadsForUserAsync(string userId)
     {
         var sql = "SELECT * FROM ChatThread WHERE UserId = @UserId ORDER BY CreatedAt DESC";
