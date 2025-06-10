@@ -16,23 +16,23 @@
     {
         @foreach (var msg in ThreadMessages)
         {
-            <div class="chat-message from-me">
-                <div class="avatar">🤔</div>
-                <div class="message-bubble">
-                    <div class="message-text">
-                        @((MarkupString)MarkdownService.Parse(msg.Prompt))
-                    </div>
+        <div class="chat-message from-me">
+            <div class="avatar">🤔</div>
+            <div class="message-bubble">
+                <div class="message-text">
+                    @((MarkupString)MarkdownService.Parse(msg.Prompt))
                 </div>
             </div>
-            <div class="chat-message from-them">
-                <div class="avatar">🤖</div>
-                <div class="message-bubble">
-                    <div class="message-text">
-                        @((MarkupString)MarkdownService.Parse(msg.Response))
-                    </div>
-                    <div class="message-time">@msg.Model - @msg.CreatedAt UTC</div>
+        </div>
+        <div class="chat-message from-them">
+            <div class="avatar">🤖</div>
+            <div class="message-bubble">
+                <div class="message-text">
+                    @((MarkupString)MarkdownService.Parse(msg.Response))
                 </div>
+                <div class="message-time">@msg.Model - @msg.CreatedAt UTC</div>
             </div>
+        </div>
         }
     }
     @if (IsLoading)
@@ -49,7 +49,7 @@
             <div class="avatar">🤖</div>
             <div class="message-bubble">
                 <div class="message-text">
-                    @CurrentResponse
+                    @((MarkupString)MarkdownService.Parse(CurrentResponse))
                 </div>
                 <div class="message-time">loading...</div>
             </div>
@@ -57,7 +57,7 @@
     }
     </div>
     <div class="chat-input-area">
-        <textarea class="chat-input" placeholder="" rows="5" @bind="UserInput"></textarea>
+        <textarea class="chat-input" @ref="chatInputRef" placeholder="" rows="5" @bind="UserInput"></textarea>
         <div class="input-row">
         <select id="userSelect" @bind="SelectedModel">
             @foreach (var model in AvailableModels)
@@ -66,14 +66,14 @@
             }
         </select>
         <button class="send-btn" title="Send" @onclick="SendPrompt" disabled="@IsLoading">
-                @if (IsLoading)
-                {
-                    <span class="emoji">🔥</span>
-                } else
-                {
-                    <span class="emoji">🚀</span>
-                }
-            </button>
+            @if (IsLoading)
+            {
+                <span class="emoji">🔥</span>
+            } else
+            {
+                <span class="emoji">🚀</span>
+            }
+        </button>
         </div>
     </div>
 </div>
@@ -83,7 +83,10 @@
       if (chatContainer) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
-    }
+    };
+    window.focusElement = (element) => {
+        if (element) element.focus();
+    };
 </script>
 @code {
     [Parameter] public int? ThreadId { get; set; }
@@ -96,6 +99,7 @@
     private List<ChatHistory> ThreadMessages = new();
     private bool IsLoading = false;
     private ChatHistory CurrentMessage = new ChatHistory();
+    private ElementReference chatInputRef;
 
     private string CurrentResponse = "";
 
@@ -215,5 +219,7 @@
     {
         await JS.InvokeVoidAsync("scrollChatToBottom");
         await JS.InvokeVoidAsync("highlightCode");
+        await JS.InvokeVoidAsync("focusElement", chatInputRef);
+
     }
 }

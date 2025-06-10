@@ -12,7 +12,6 @@
     <PackageReference Include="Dapper" Version="2.1.71" />
     <PackageReference Include="Markdig" Version="0.41.2" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
-    <PackageReference Include="WebStoating.Markdig.Prism" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,4 @@
 ﻿using Markdig;
-using Markdig.Prism;
 
 namespace wl.chat.Services;
 
@@ -11,7 +10,6 @@ public class MarkdigService : IMarkdownService
     {
         _pipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
-            .UsePrism()
             .UseEmojiAndSmiley()
             .UseSoftlineBreakAsHardlineBreak()
             .Build();
@@ -24,7 +22,7 @@ public class MarkdigService : IMarkdownService
             return string.Empty;
         }
 
-        // Use the pre-built pipeline to convert Markdown to HTML.
         return Markdown.ToHtml(markdown, _pipeline);
     }
+
 }
