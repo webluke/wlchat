@@ -1,12 +1,68 @@
 ﻿@page "/"
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<PageTitle>New WebLuke.chat</PageTitle>
-<br />
-<br />
-<br />
-<br />
-<br />
-<br />
+<PageTitle>Welcome to @SiteSettings.Value.SiteName</PageTitle>
 
-⬅️ Create a new chat or select an existing chat.
+<div class="chat-app">
+    <div class="chat-title">
+        <button class="sidebar-toggle" @onclick="OpenSidebar" aria-label="Open menu">☰</button>
+        Welcome to @SiteSettings.Value.SiteName
+    </div>
+    <div class="chat-container" style="justify-content:center; align-items:center; display:flex;">
+        @if (!IsLoggedIn)
+        {
+            <div style="text-align:center;">
+                <h2>Welcome to @SiteSettings.Value.SiteName</h2>
+                <p>Please log in to start chatting.</p>
+                <button class="login-btn" @onclick="Login">Login</button>
+            </div>
+        }
+        else
+        {
+            <div style="text-align:center;">
+                <h2>Welcome, @UserName!</h2>
+                <p>Select a chat from the sidebar <span style="font-size:1.2em;">☰</span> to get started.</p>
+            </div>
+        }
+    </div>
+</div>
 
+@code {
+    private bool IsLoggedIn = false;
+    private string UserName = "";
+    private string UserInitial = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        IsLoggedIn = user.Identity?.IsAuthenticated ?? false;
+        if (IsLoggedIn)
+        {
+            UserName = user.FindFirst(c => c.Type == "nickname")?.Value;
+            UserInitial = !string.IsNullOrEmpty(UserName) ? UserName[0].ToString().ToUpper() : "U";
+        }
+    }
+
+    protected async Task OpenSidebar()
+    {
+        await JS.InvokeVoidAsync("toggleSidebar", true);
+    }
+
+    protected async Task CloseSidebar()
+    {
+        await JS.InvokeVoidAsync("toggleSidebar", false);
+    }
+
+    private void Login()
+    {
+        Navigation.NavigateTo("login", true);
+    }
+
+    private void Logout()
+    {
+        Navigation.NavigateTo("logout", true);
+    }
+}

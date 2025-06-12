@@ -10,6 +10,8 @@ using wl.chat.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<SiteSettings>(builder.Configuration.GetSection("SiteSettings"));
+
 builder.Services.AddAuth0WebAppAuthentication(options => {
     options.Domain = builder.Configuration["Auth0:Domain"];
     options.ClientId = builder.Configuration["Auth0:ClientId"];

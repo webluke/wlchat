@@ -1,12 +1,13 @@
 ﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
 
 <PageTitle>wl.chat</PageTitle>
 
 <div class="chat-page">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar" @onclick="CloseSidebar">
       <div class="sidebar-header">
-        <span class="site-logo">💬</span>
-        <span class="site-name">chat.webluke.net</span>
+        <span class="site-logo">@SiteSettings.Value.SiteEmoji</span>
+            <span class="site-name">@SiteSettings.Value.SiteName</span>
       </div>
       <AuthorizeView>
         <Authorized>
@@ -25,3 +26,11 @@
         @Body
     </main>
 </div>
+
+
+@code {
+    protected async Task CloseSidebar()
+    {
+        await JS.InvokeVoidAsync("toggleSidebar", false);
+    }
+}

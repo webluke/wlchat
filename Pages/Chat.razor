@@ -10,7 +10,10 @@
 <PageTitle>@(IsNewThread ? "New Chat" : $"{ThreadTitle}")</PageTitle>
 
 <div class="chat-app">
-    <div class="chat-title">@(IsNewThread ? "New Chat" : $"{ThreadTitle}")</div>
+    <div class="chat-title">
+        <button class="sidebar-toggle" @onclick="OpenSidebar" aria-label="Open menu">☰</button>
+        @(IsNewThread ? "New Chat" : $"{ThreadTitle}")
+    </div>
     <div class="chat-container">
     @if (!IsNewThread)
     {
@@ -77,17 +80,6 @@
         </div>
     </div>
 </div>
-<script>
-    window.scrollChatToBottom = function () {
-      var chatContainer = document.querySelector('.chat-container');
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    };
-    window.focusElement = (element) => {
-        if (element) element.focus();
-    };
-</script>
 @code {
     [Parameter] public int? ThreadId { get; set; }
     private string UserInput;
@@ -212,6 +204,7 @@
         CurrentResponse = ThreadMessages.LastOrDefault()?.Response ?? "";
         IsLoading = false;
         UserInput = "";
+        await JS.InvokeVoidAsync("focusElement", chatInputRef);
         StateHasChanged();
     }
 
@@ -219,7 +212,20 @@
     {
         await JS.InvokeVoidAsync("scrollChatToBottom");
         await JS.InvokeVoidAsync("highlightCode");
-        await JS.InvokeVoidAsync("focusElement", chatInputRef);
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("focusElement", chatInputRef);
+        }
 
+    }
+
+    protected async Task OpenSidebar()
+    {
+        await JS.InvokeVoidAsync("toggleSidebar", true);
+    }
+
+    protected async Task CloseSidebar()
+    {
+        await JS.InvokeVoidAsync("toggleSidebar", false);
     }
 }
