@@ -98,6 +98,11 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadUserIdAsync();
+        if (string.IsNullOrEmpty(UserId))
+        {
+            Navigation.NavigateTo($"/");
+            return;
+        }
         await LoadModelsAsync();
     }
 
@@ -168,12 +173,12 @@
 
             CurrentResponse = CurrentResponse
                 .Replace("[DONE]", "", StringComparison.OrdinalIgnoreCase)
-                .Replace("\n\n", "\n")
                 .Trim();
 
             await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
-            
+
             Navigation.NavigateTo($"/chat/{threadId}", forceLoad: true);
+            return;
         }
 
         await foreach (var chunk in ChatService.StreamResponseAsync(threadId, UserInput, SelectedModel))
@@ -185,7 +190,6 @@
 
         CurrentResponse = CurrentResponse
             .Replace("[DONE]", "", StringComparison.OrdinalIgnoreCase)
-            .Replace("\n\n", "\n")
             .Trim();
 
         await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
