@@ -172,16 +172,8 @@
                 .Trim();
 
             await ChatService.SaveChatAsync(threadId, UserId, UserInput, CurrentResponse, SelectedModel);
-
-            ThreadMessages = await ChatService.GetMessagesForThreadAsync(threadId);
-            OutputChunks.Clear();
-            CurrentResponse = ThreadMessages.LastOrDefault()?.Response ?? "";
-            IsLoading = false;
-            UserInput = "";
-            StateHasChanged();
-
+            
             Navigation.NavigateTo($"/chat/{threadId}", forceLoad: true);
-            return;
         }
 
         await foreach (var chunk in ChatService.StreamResponseAsync(threadId, UserInput, SelectedModel))
@@ -211,10 +203,7 @@
     {
         await JS.InvokeVoidAsync("scrollChatToBottom");
         await JS.InvokeVoidAsync("highlightCode");
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("focusElement", chatInputRef);
-        }
+        await JS.InvokeVoidAsync("focusElement", chatInputRef);
 
     }
 

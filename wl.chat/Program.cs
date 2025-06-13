@@ -30,8 +30,7 @@ builder.Services.AddScoped<ModelService>();
 builder.Services.Configure<LMStudioOptions>(
     builder.Configuration.GetSection("LMStudio"));
 builder.Services.AddScoped<ChatService>();
-builder.Services.AddScoped<IDbConnection>(sp =>
-    new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<ISqlDataService, SqlDataService>();
 
 var app = builder.Build();
 

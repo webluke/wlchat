@@ -5,10 +5,10 @@ namespace wl.chat.Data;
 public class ChatService
 {
     private readonly HttpClient _httpClient;
-    private readonly IDbConnection _db;
+    private readonly ISqlDataService _db;
     private readonly string _baseUrl;
 
-    public ChatService(HttpClient httpClient, IDbConnection db, IOptions<LMStudioOptions> options)
+    public ChatService(HttpClient httpClient, ISqlDataService db, IOptions<LMStudioOptions> options)
     {
         _httpClient = httpClient;
         _db = db;
@@ -95,36 +95,30 @@ public class ChatService
 
     public async Task<List<ChatThread>> GetThreadsForUserAsync(string userId)
     {
-        var sql = "SELECT * FROM ChatThread WHERE UserId = @UserId ORDER BY CreatedAt DESC";
-        var threads = await _db.QueryAsync<ChatThread>(sql, new { UserId = userId });
+        var threads = await _db.LoadData<ChatThread, dynamic>("spGetThreadsForUser", new { UserId = userId });
         return threads.ToList();
     }
 
     public async Task<int> CreateThreadAsync(string userId, string title)
     {
-        var sql = @"INSERT INTO ChatThread (UserId, Title, CreatedAt)
-                VALUES (@UserId, @Title, @CreatedAt);
-                SELECT CAST(SCOPE_IDENTITY() as int);";
-        return await _db.ExecuteScalarAsync<int>(sql, new
+        var result = await _db.LoadData<int, dynamic>("spCreateThread", new
         {
             UserId = userId,
             Title = title,
             CreatedAt = DateTime.UtcNow
         });
+        return result.FirstOrDefault();
     }
 
     public async Task<List<ChatHistory>> GetMessagesForThreadAsync(int threadId)
     {
-        var sql = "SELECT * FROM ChatHistory WHERE ThreadId = @ThreadId ORDER BY CreatedAt";
-        var messages = await _db.QueryAsync<ChatHistory>(sql, new { ThreadId = threadId });
+        var messages = await _db.LoadData<ChatHistory, dynamic>("spGetMessagesForThread", new { ThreadId = threadId });
         return messages.ToList();
     }
 
     public async Task SaveChatAsync(int threadId, string userId, string prompt, string response, string model)
     {
-        var sql = @"INSERT INTO ChatHistory (ThreadId, UserId, Prompt, Response, Model, CreatedAt)
-                VALUES (@ThreadId, @UserId, @Prompt, @Response, @Model, @CreatedAt)";
-        await _db.ExecuteAsync(sql, new
+        await _db.SaveData("spSaveChat", new
         {
             ThreadId = threadId,
             UserId = userId,
@@ -137,12 +131,6 @@ public class ChatService
 
     public async Task DeleteThreadAsync(int threadId)
     {
-        // Delete messages first (if you have ON DELETE CASCADE, this is optional)
-        var deleteMessagesSql = "DELETE FROM ChatHistory WHERE ThreadId = @ThreadId";
-        await _db.ExecuteAsync(deleteMessagesSql, new { ThreadId = threadId });
-
-        // Then delete the thread
-        var deleteThreadSql = "DELETE FROM ChatThread WHERE Id = @ThreadId";
-        await _db.ExecuteAsync(deleteThreadSql, new { ThreadId = threadId });
+        await _db.SaveData("spDeleteThread", new { ThreadId = threadId });
     }
 }

@@ -1,0 +1,7 @@
+﻿CREATE TABLE [dbo].[ChatThread]
+(
+    Id INT IDENTITY PRIMARY KEY,
+    UserId NVARCHAR(100) NOT NULL,
+    Title NVARCHAR(255),
+    CreatedAt DATETIME
+)
